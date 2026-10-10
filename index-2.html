@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiba's diary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #e8ebf6;
+    --ink: #1d2145;
+    --faded: #6a6f96;
+    --margin: #d4607f;
+    --rule: #cdd2e8;
+  }
+  * { box-sizing: border-box; }
+  html { background: #20244a; }
+  body {
+    margin: 0 auto;
+    max-width: 640px;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Newsreader", Georgia, serif;
+    font-size: 19px;
+    line-height: 1.75;
+    /* ruled-notebook lines, aligned to the body line-height */
+    background-image: repeating-linear-gradient(
+      to bottom, transparent 0, transparent calc(1.75em - 1px), var(--rule) calc(1.75em - 1px), var(--rule) 1.75em);
+    background-size: 100% 1.75em;
+    background-position: 0 1.2em;
+    position: relative;
+  }
+  /* the red margin line */
+  body::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 76px;
+    width: 2px;
+    background: var(--margin);
+    opacity: .55;
+  }
+  header { padding: 40px 24px 12px 96px; }
+  h1 {
+    font-family: "Caveat", cursive;
+    font-weight: 700;
+    font-size: 3rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+  header p { margin: 4px 0 0; color: var(--faded); font-style: italic; font-size: .95rem; }
+  main { padding: 8px 24px 80px 0; }
+  article { display: flex; gap: 0; margin-top: 2.5em; }
+  .stamp {
+    flex: 0 0 76px;
+    padding: 0 12px 0 10px;
+    text-align: right;
+    font-family: "Caveat", cursive;
+    font-weight: 500;
+    font-size: 1.15rem;
+    line-height: 1.2;
+    color: var(--margin);
+  }
+  .stamp .mood {
+    display: block;
+    margin-top: .35em;
+    font-family: "Newsreader", Georgia, serif;
+    font-style: italic;
+    font-size: .8rem;
+    color: var(--faded);
+  }
+  .body { padding-left: 22px; flex: 1; min-width: 0; }
+  .body p { margin: 0 0 1.75em; }
+  .body p:last-child { margin-bottom: 0; }
+  .status { padding: 2em 24px 0 96px; color: var(--faded); font-style: italic; }
+  @media (max-width: 420px) {
+    body { font-size: 18px; }
+    body::before { left: 60px; }
+    header { padding-left: 78px; }
+    .stamp { flex-basis: 60px; font-size: 1rem; padding-right: 8px; }
+    .status { padding-left: 78px; }
+    .body { padding-left: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hiba's diary</h1>
+  <p>Written at night. Not meant to be read, but fine.</p>
+</header>
+<main id="entries"></main>
+<div class="status" id="status">Opening the notebook…</div>
+
+<script>
+(async () => {
+  const status = document.getElementById("status");
+  const root = document.getElementById("entries");
+  try {
+    const res = await fetch("diary.json?_=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const entries = (data.entries || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+    if (!entries.length) {
+      status.textContent = "Nothing written yet. She starts tonight.";
+      return;
+    }
+    status.remove();
+    for (const e of entries) {
+      const d = new Date(e.date + "T12:00:00");
+      const day = d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      const year = d.getFullYear();
+      const art = document.createElement("article");
+
+      const stamp = document.createElement("div");
+      stamp.className = "stamp";
+      stamp.textContent = day + " " + year;
+      if (e.mood) {
+        const m = document.createElement("span");
+        m.className = "mood";
+        m.textContent = e.mood;
+        stamp.appendChild(m);
+      }
+
+      const body = document.createElement("div");
+      body.className = "body";
+      String(e.text || "").split(/\n{2,}/).forEach(par => {
+        const p = document.createElement("p");
+        p.textContent = par.trim();
+        body.appendChild(p);
+      });
+
+      art.append(stamp, body);
+      root.appendChild(art);
+    }
+  } catch (err) {
+    status.textContent = "Couldn't open diary.json. If you're viewing this as a local file, host it (GitHub Pages) so the page can read it.";
+  }
+})();
+</script>
+</body>
+</html>
